@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motionsites.ai - 视频预览</title>
+  
+  <!-- HLS.js 用于播放流媒体视频 -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0a0a12 0%, #1a1a2e 100%);
+      color: #fff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    h1 {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #8b8ba5;
+      font-size: 18px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .selector-section {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .selector-wrapper {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .video-selector {
+      flex: 1;
+      min-width: 300px;
+      padding: 16px 20px;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .video-selector:hover {
+      border-color: rgba(167, 139, 250, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .video-selector:focus {
+      outline: none;
+      border-color: #a78bfa;
+      box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+    }
+
+    .video-selector option {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 10px;
+    }
+
+    .video-info-display {
+      flex: 1;
+      min-width: 300px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+    }
+
+    .video-info-display h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .video-info-display p {
+      color: #8b8ba5;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .player-section {
+      margin-bottom: 40px;
+    }
+
+    .video-player-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .video-player-wrapper video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #8b8ba5;
+      font-size: 16px;
+    }
+
+    .error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ff6b6b;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .video-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      padding: 4px 12px;
+      background: rgba(167, 139, 250, 0.15);
+      border-radius: 6px;
+      font-size: 12px;
+      color: #a78bfa;
+    }
+
+    .stats-section {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin: 60px 0;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      display: block;
+      font-size: 36px;
+      font-weight: 700;
+      color: #a78bfa;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #8b8ba5;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 80px;
+      padding: 40px 0;
+      color: #8b8ba5;
+      font-size: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    @media (max-width: 768px) {
+      .video-grid {
+        grid-template-columns: 1fr;
+      }
+
+      body {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Motionsites.ai 视频预览</h1>
+      <p class="subtitle">探索高端网站设计灵感，体验流畅的动效与视觉呈现</p>
+    </header>
+
+    <!-- 视频选择器 -->
+    <div class="selector-section">
+      <h2 class="section-title">选择视频</h2>
+      <div class="selector-wrapper">
+        <select id="videoSelect" class="video-selector">
+          <!-- 选项将通过 JavaScript 动态生成 -->
+        </select>
+        <div class="video-info-display">
+          <h3 id="currentTitle">选择一个视频开始播放</h3>
+          <p id="currentDesc">从下拉列表中选择您想观看的视频</p>
+          <div id="currentTags" class="video-tags"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 单个视频播放器 -->
+    <div class="player-section">
+      <div class="video-player-wrapper">
+        <video id="mainVideo" controls muted playsinline preload="metadata"></video>
+        <div class="loading" id="mainLoading">选择视频后自动加载</div>
+        <div class="error" id="mainError" style="display: none;">加载失败，请检查网络连接</div>
+      </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="stats-section">
+      <div class="stat-item">
+        <span class="stat-number" id="totalCount">0</span>
+        <span class="stat-label">可用视频</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number" id="loadedCount">0</span>
+        <span class="stat-label">已加载</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number" id="failedCount">0</span>
+        <span class="stat-label">加载失败</span>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 Video Preview Player. 共 <span id="footerCount">0</span> 个视频</p>
+    </footer>
+  </div>
+
+  <script>
+    // 视频数据配置 - 完整视频列表
+    const videos = [
+      {
+        id: 'ai-automation',
+        title: 'AI Automation Hero',
+        desc: '智能自动化主题，适合科技公司和AI产品展示 (HLS流媒体)',
+        tags: ['AI', 'Automation', 'Tech', 'HLS'],
+        videoUrl: 'https://manifest-oci-us-ashburn-1-vop1.fastly.mux.com/5NH00fq3xcJtJnvWk3bTiGTe5HbpIjeqZ1CHwFb02TwZ8001hL1GYzxY3Xfod5rmHzUiykrYMrx1fpKGIxS019XQo02jbOhPQxRCL/rendition.m3u8?cdn=fastly&expires=1775768400&skid=default&signature=NjlkODE2NzJfYmIzMGNlMmY5OTQ4NDUyOTE4MmE2MjQwNTUzNDZhNzY3NWQxZTJlM2U4ZDE5Njk2NDAwN2Y4YzZlMDk5ZDYyZQ=='
+      },
+      {
+        id: 'ai-designer-agency-0',
+        title: 'AI Designer Agency 0',
+        desc: '设计机构风格，展示创意设计和品牌视觉',
+        tags: ['Design', 'Agency', 'Creative'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/AI_Designer_Agency_0.mp4'
+      },
+      {
+        id: 'ai-designer-agency-6',
+        title: 'AI Designer Agency 6',
+        desc: '设计机构高级风格展示',
+        tags: ['Design', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/AI_Designer_Agency_6.mp4'
+      },
+      {
+        id: 'akor-security-0',
+        title: 'AKOR Security 0',
+        desc: '安全防护主题，适合网络安全公司',
+        tags: ['Security', 'Protection'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/AKOR_Security_0.mp4'
+      },
+      {
+        id: 'akor-security-5',
+        title: 'AKOR Security 5',
+        desc: '安全防护高级展示',
+        tags: ['Security', 'Advanced'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/AKOR_Security_5.mp4'
+      },
+      {
+        id: 'aethera-studio',
+        title: 'Aethera Studio',
+        desc: '工作室风格，适合创意团队',
+        tags: ['Studio', 'Creative'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Aethera_Studio_0.mp4'
+      },
+      {
+        id: 'apex-saas',
+        title: 'Apex SaaS',
+        desc: 'SaaS产品展示，简洁专业',
+        tags: ['SaaS', 'Product'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Apex_SaaS_0.mp4'
+      },
+      {
+        id: 'asme',
+        title: 'Asme',
+        desc: '现代极简风格',
+        tags: ['Minimal', 'Modern'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Asme_0.mp4'
+      },
+      {
+        id: 'bionova-biotech-0',
+        title: 'Bionova Biotech 0',
+        desc: '生物科技主题，适合医疗健康行业',
+        tags: ['Biotech', 'Health'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Bionova_Biotech_0.mp4'
+      },
+      {
+        id: 'bionova-biotech-1',
+        title: 'Bionova Biotech 1',
+        desc: '生物科技高级展示',
+        tags: ['Biotech', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Bionova_Biotech_1.mp4'
+      },
+      {
+        id: 'bloom-ai',
+        title: 'Bloom AI',
+        desc: 'AI主题，自然生长感',
+        tags: ['AI', 'Natural'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Bloom_AI_0.mp4'
+      },
+      {
+        id: 'buzzentic-agency',
+        title: 'Buzzentic Agency',
+        desc: '营销机构风格',
+        tags: ['Agency', 'Marketing'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Buzzentic_Agency_0.mp4'
+      },
+      {
+        id: 'clearinvoice-saas',
+        title: 'ClearInvoice SaaS',
+        desc: '发票管理SaaS产品',
+        tags: ['SaaS', 'Finance'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/ClearInvoice_SaaS_Hero_0.mp4'
+      },
+      {
+        id: 'clubx-investors',
+        title: 'ClubX Investors',
+        desc: '投资机构风格',
+        tags: ['Finance', 'Investment'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/ClubX_Investors_0.mp4'
+      },
+      {
+        id: 'codenest-coding',
+        title: 'CodeNest Coding Platform',
+        desc: '编程平台，开发者友好',
+        tags: ['Coding', 'Developer'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/CodeNest_Coding_Platform_0.mp4'
+      },
+      {
+        id: 'dark-portfolio',
+        title: 'Dark Portfolio Hero',
+        desc: '暗色主题作品集，适合个人开发者和设计师',
+        tags: ['Portfolio', 'Dark', 'Minimal'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Dark_Portfolio_Hero_0.mp4'
+      },
+      {
+        id: 'datacore-booking',
+        title: 'Datacore Booking',
+        desc: '预订系统SaaS',
+        tags: ['Booking', 'SaaS'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Datacore_Booking_0.mp4'
+      },
+      {
+        id: 'datacore-saas',
+        title: 'Datacore SaaS Hero',
+        desc: '数据SaaS产品展示',
+        tags: ['Data', 'SaaS'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Datacore_SaaS_Hero_0.mp4'
+      },
+      {
+        id: 'designpro-academy',
+        title: 'DesignPro Academy',
+        desc: '设计教育平台',
+        tags: ['Education', 'Design'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/DesignPro_Academy_0.mp4'
+      },
+      {
+        id: 'digitwist-ai-0',
+        title: 'Digitwist AI Builder 0',
+        desc: 'AI构建器工具',
+        tags: ['AI', 'Builder'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Digitwist_AI_Builder_0.mp4'
+      },
+      {
+        id: 'digitwist-ai-1',
+        title: 'Digitwist AI Builder 1',
+        desc: 'AI构建器高级展示',
+        tags: ['AI', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Digitwist_AI_Builder_1.mp4'
+      },
+      {
+        id: 'evr-ventures',
+        title: 'EVR Ventures',
+        desc: '风险投资机构',
+        tags: ['Venture', 'Investment'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/EVR_Ventures_0.mp4'
+      },
+      {
+        id: 'finlytic-ai',
+        title: 'Finlytic AI Agent',
+        desc: '金融AI代理',
+        tags: ['Finance', 'AI'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Finlytic_AI_Agent_0.mp4'
+      },
+      {
+        id: 'framelix-3d-0',
+        title: 'Framelix 3D Studios 0',
+        desc: '3D工作室，视觉特效',
+        tags: ['3D', 'Visual'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Framelix_3D_Studios_0.mp4'
+      },
+      {
+        id: 'framelix-3d-1',
+        title: 'Framelix 3D Studios 1',
+        desc: '3D工作室高级展示',
+        tags: ['3D', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Framelix_3D_Studios_1.mp4'
+      },
+      {
+        id: 'grow-ai-talent',
+        title: 'Grow AI Talent Platform',
+        desc: 'AI人才平台',
+        tags: ['AI', 'Talent'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Grow_AI_Talent_Platform_0.mp4'
+      },
+      {
+        id: 'hr-saas',
+        title: 'HR SaaS Hero',
+        desc: '人力资源SaaS',
+        tags: ['HR', 'SaaS'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/HR_SaaS_Hero_0.mp4'
+      },
+      {
+        id: 'investor-deck-0',
+        title: 'Investor Deck 0',
+        desc: '投资者演示文稿',
+        tags: ['Presentation', 'Investment'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Investor_Deck_0.mp4'
+      },
+      {
+        id: 'investor-deck-1',
+        title: 'Investor Deck 1',
+        desc: '投资者演示文稿高级版',
+        tags: ['Presentation', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Investor_Deck_1.mp4'
+      },
+      {
+        id: 'liquid-glass-0',
+        title: 'Liquid Glass Agency 0',
+        desc: '液态玻璃效果，现代设计',
+        tags: ['Glass', 'Modern'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Liquid_Glass_Agency_0.mp4'
+      },
+      {
+        id: 'liquid-glass-1',
+        title: 'Liquid Glass Agency 1',
+        desc: '液态玻璃高级效果',
+        tags: ['Glass', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Liquid_Glass_Agency_1.mp4'
+      },
+      {
+        id: 'logoisum-video',
+        title: 'Logoisum Video Agency',
+        desc: '视频制作机构',
+        tags: ['Video', 'Agency'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Logoisum_Video_Agency_0.mp4'
+      },
+      {
+        id: 'mindloop-0',
+        title: 'Mindloop 0',
+        desc: '思维循环主题',
+        tags: ['Mind', 'Loop'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Mindloop_0.mp4'
+      },
+      {
+        id: 'mindloop-landing-0',
+        title: 'Mindloop Landing 0',
+        desc: '思维循环落地页',
+        tags: ['Landing', 'Mind'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Mindloop_Landing_0.mp4'
+      },
+      {
+        id: 'nova-space-1',
+        title: 'NOVA Space Systems 1',
+        desc: '太空系统主题',
+        tags: ['Space', 'Tech'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/NOVA_Space_Systems_1.mp4'
+      },
+      {
+        id: 'nova-space-2',
+        title: 'NOVA Space Systems 2',
+        desc: '太空系统高级展示',
+        tags: ['Space', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/NOVA_Space_Systems_2.mp4'
+      },
+      {
+        id: 'neovision-0',
+        title: 'NeoVision 0',
+        desc: '新视觉体验',
+        tags: ['Vision', 'Modern'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/NeoVision_0.mp4'
+      },
+      {
+        id: 'neovision-1',
+        title: 'NeoVision 1',
+        desc: '新视觉高级版',
+        tags: ['Vision', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/NeoVision_1.mp4'
+      },
+      {
+        id: 'neuralyn',
+        title: 'Neuralyn',
+        desc: '神经网络主题',
+        tags: ['Neural', 'AI'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Neuralyn_0.mp4'
+      },
+      {
+        id: 'new-era-automotive',
+        title: 'New Era Automotive',
+        desc: '新时代汽车主题',
+        tags: ['Automotive', 'Modern'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/New_Era_Automotive_Hero_0.mp4'
+      },
+      {
+        id: 'new-era-bold',
+        title: 'New Era Bold Hero',
+        desc: '大胆创新风格',
+        tags: ['Bold', 'Innovation'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/New_Era_Bold_Hero_0.mp4'
+      },
+      {
+        id: 'nexora-automation',
+        title: 'Nexora Automation',
+        desc: '自动化解决方案',
+        tags: ['Automation', 'Tech'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Nexora_Automation_0.mp4'
+      },
+      {
+        id: 'nexus-it',
+        title: 'Nexus IT Solutions',
+        desc: 'IT解决方案提供商',
+        tags: ['IT', 'Solutions'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Nexus_IT_Solutions_0.mp4'
+      },
+      {
+        id: 'nickel-payments',
+        title: 'Nickel Payments',
+        desc: '支付解决方案',
+        tags: ['Payment', 'Finance'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Nickel_Payments_0.mp4'
+      },
+      {
+        id: 'orbis-nft-0',
+        title: 'Orbis NFT 0',
+        desc: 'NFT数字藏品平台',
+        tags: ['NFT', 'Web3'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Orbis_NFT_0.mp4'
+      },
+      {
+        id: 'orbit-engineers-0',
+        title: 'Orbit Engineers 0',
+        desc: '工程团队风格',
+        tags: ['Engineering', 'Team'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Orbit_Engineers_0.mp4'
+      },
+      {
+        id: 'orbit-web3',
+        title: 'Orbit Web3',
+        desc: 'Web3去中心化应用',
+        tags: ['Web3', 'Decentralized'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Orbit_Web3_0.mp4'
+      },
+      {
+        id: 'planet-orbit',
+        title: 'Planet Orbit',
+        desc: '行星轨道主题',
+        tags: ['Space', 'Orbit'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Planet_Orbit_0.mp4'
+      },
+      {
+        id: 'portfolio-cosmic',
+        title: 'Portfolio Cosmic',
+        desc: '宇宙主题作品集',
+        tags: ['Portfolio', 'Cosmic'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Portfolio_Cosmic_0.mp4'
+      },
+      {
+        id: 'power-ai',
+        title: 'Power AI',
+        desc: 'AI力量展示',
+        tags: ['AI', 'Power'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Power_AI_0.mp4'
+      },
+      {
+        id: 'railroad-ai',
+        title: 'Railroad.ai',
+        desc: '铁路AI系统',
+        tags: ['AI', 'Transport'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Railroad.ai_0.mp4'
+      },
+      {
+        id: 'skyelite-jets',
+        title: 'SkyElite Private Jets',
+        desc: '私人飞机服务',
+        tags: ['Luxury', 'Aviation'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/SkyElite_Private_Jets_0.mp4'
+      },
+      {
+        id: 'space-voyage-0',
+        title: 'Space Voyage 0',
+        desc: '太空旅行主题',
+        tags: ['Space', 'Voyage'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Space_Voyage_0.mp4'
+      },
+      {
+        id: 'stellar-ai',
+        title: 'Stellar AI',
+        desc: '恒星AI主题',
+        tags: ['AI', 'Stellar'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Stellar_AI_0.mp4'
+      },
+      {
+        id: 'synapse-dark',
+        title: 'Synapse Dark Hero',
+        desc: '暗色突触主题',
+        tags: ['Dark', 'Neural'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Synapse_Dark_Hero_0.mp4'
+      },
+      {
+        id: 'sync-ai',
+        title: 'Sync AI',
+        desc: '同步AI系统',
+        tags: ['AI', 'Sync'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Sync_AI_0.mp4'
+      },
+      {
+        id: 'targo-logistics',
+        title: 'Targo Logistics',
+        desc: '物流解决方案',
+        tags: ['Logistics', 'Supply Chain'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Targo_Logistics_Hero_0.mp4'
+      },
+      {
+        id: 'taskly',
+        title: 'Taskly',
+        desc: '任务管理工具',
+        tags: ['Task', 'Management'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Taskly_0.webm'
+      },
+      {
+        id: 'taskora-saas',
+        title: 'Taskora SaaS Hero',
+        desc: '任务SaaS产品',
+        tags: ['Task', 'SaaS'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Taskora_SaaS_Hero_0.mp4'
+      },
+      {
+        id: 'terra-geo',
+        title: 'Terra Geo Map',
+        desc: '地理地图系统',
+        tags: ['Geo', 'Map'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Terra_Geo_Map_0.mp4'
+      },
+      {
+        id: 'transform-data',
+        title: 'Transform Data',
+        desc: '数据转换工具',
+        tags: ['Data', 'Transform'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Transform_Data_0.mp4'
+      },
+      {
+        id: 'velorah',
+        title: 'Velorah',
+        desc: '优雅设计风格',
+        tags: ['Elegant', 'Design'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Velorah_0.mp4'
+      },
+      {
+        id: 'viktor-portfolio-0',
+        title: 'Viktor Portfolio 0',
+        desc: '个人作品集展示',
+        tags: ['Portfolio', 'Personal'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Viktor_Portfolio_0.mp4'
+      },
+      {
+        id: 'wealth-video',
+        title: 'Wealth Video Hero',
+        desc: '财富管理主题',
+        tags: ['Wealth', 'Finance'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Wealth_Video_Hero_0.mp4'
+      },
+      {
+        id: 'web3-eos',
+        title: 'Web3 EOS Hero',
+        desc: 'Web3 EOS系统',
+        tags: ['Web3', 'Blockchain'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Web3_EOS_Hero_0.mp4'
+      },
+      {
+        id: 'weblex-dark',
+        title: 'Weblex Dark Hero',
+        desc: '暗色主题网站',
+        tags: ['Dark', 'Modern'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/Weblex_Dark_Hero_0.mp4'
+      },
+      {
+        id: 'xportfolio',
+        title: 'xPortfolio Hero',
+        desc: '高级作品集展示',
+        tags: ['Portfolio', 'Premium'],
+        videoUrl: 'https://raw.githubusercontent.com/xiiiabu/motionsites.ai/main/assets/videos/xPortfolio_Hero_0.mp4'
+      }
+    ];
+
+    // 统计数据
+    let loadedCount = 0;
+    let failedCount = 0;
+
+    // 初始化视频选择器
+    function initVideoSelector() {
+      const select = document.getElementById('videoSelect');
+      
+      // 添加默认选项
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- 请选择视频 --';
+      select.appendChild(defaultOption);
+
+      // 添加所有视频选项
+      videos.forEach((video, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${video.title} - ${video.desc}`;
+        select.appendChild(option);
+      });
+
+      // 更新统计
+      document.getElementById('totalCount').textContent = videos.length;
+      document.getElementById('footerCount').textContent = videos.length;
+
+      // 监听选择变化
+      select.addEventListener('change', handleVideoSelect);
+    }
+
+    // 处理视频选择
+    function handleVideoSelect(e) {
+      const index = e.target.value;
+      if (index === '') {
+        resetPlayer();
+        return;
+      }
+
+      const video = videos[index];
+      loadVideo(video);
+      updateVideoInfo(video);
+    }
+
+    // 加载视频
+    function loadVideo(video) {
+      const mainVideo = document.getElementById('mainVideo');
+      const loading = document.getElementById('mainLoading');
+      const error = document.getElementById('mainError');
+
+      // 重置状态
+      loading.style.display = 'block';
+      loading.textContent = '加载中...';
+      error.style.display = 'none';
+
+      // 销毁之前的 HLS 实例
+      if (window.hlsInstance) {
+        window.hlsInstance.destroy();
+        window.hlsInstance = null;
+      }
+
+      // 检查是否是 HLS 流媒体格式
+      const isHLS = video.videoUrl.includes('.m3u8') || 
+                    video.videoUrl.includes('manifest') ||
+                    video.videoUrl.includes('fastly.mux.com');
+
+      if (isHLS && window.hlsSupported) {
+        // 使用 HLS.js 播放
+        const hls = new Hls({
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          startLevel: -1
+        });
+
+        hls.loadSource(video.videoUrl);
+        hls.attachMedia(mainVideo);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          loading.style.display = 'none';
+          loadedCount++;
+          document.getElementById('loadedCount').textContent = loadedCount;
+          console.log(`HLS 视频加载完成: ${video.title}`);
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            loading.style.display = 'none';
+            error.style.display = 'block';
+            failedCount++;
+            document.getElementById('failedCount').textContent = failedCount;
+            console.error(`HLS 视频加载失败: ${video.title}`, data);
+          }
+        });
+
+        window.hlsInstance = hls;
+      } else if (isHLS && mainVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari 原生支持 HLS
+        mainVideo.src = video.videoUrl;
+        mainVideo.addEventListener('loadedmetadata', () => {
+          loading.style.display = 'none';
+          loadedCount++;
+          document.getElementById('loadedCount').textContent = loadedCount;
+        });
+      } else {
+        // 普通 MP4/WebM 格式
+        mainVideo.src = video.videoUrl;
+
+        // 视频加载完成
+        mainVideo.addEventListener('loadeddata', () => {
+          loading.style.display = 'none';
+          loadedCount++;
+          document.getElementById('loadedCount').textContent = loadedCount;
+          console.log(`视频加载完成: ${video.title}`);
+        });
+
+        // 视频可以播放
+        mainVideo.addEventListener('canplay', () => {
+          loading.style.display = 'none';
+        });
+
+        // 视频加载错误
+        mainVideo.addEventListener('error', (e) => {
+          loading.style.display = 'none';
+          error.style.display = 'block';
+          failedCount++;
+          document.getElementById('failedCount').textContent = failedCount;
+          console.error(`视频加载失败: ${video.title}`, e);
+        });
+      }
+    }
+
+    // 更新视频信息显示
+    function updateVideoInfo(video) {
+      document.getElementById('currentTitle').textContent = video.title;
+      document.getElementById('currentDesc').textContent = video.desc;
+      
+      const tagsContainer = document.getElementById('currentTags');
+      tagsContainer.innerHTML = video.tags.map(tag => 
+        `<span class="tag">${tag}</span>`
+      ).join('');
+    }
+
+    // 重置播放器
+    function resetPlayer() {
+      const mainVideo = document.getElementById('mainVideo');
+      const loading = document.getElementById('mainLoading');
+      const error = document.getElementById('mainError');
+
+      mainVideo.src = '';
+      loading.style.display = 'block';
+      loading.textContent = '选择视频后自动加载';
+      error.style.display = 'none';
+
+      document.getElementById('currentTitle').textContent = '选择一个视频开始播放';
+      document.getElementById('currentDesc').textContent = '从下拉列表中选择您想观看的视频';
+      document.getElementById('currentTags').innerHTML = '';
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      initVideoSelector();
+    });
+  </script>
+</body>
+</html>
