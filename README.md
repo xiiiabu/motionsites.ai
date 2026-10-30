@@ -77,6 +77,9 @@ Below is a categorized list of all designs included in this library. Click on an
 | **Transform Data** | Hero Section | [View Prompt](prompts/Transform_Data.md) |
 | **xPortfolio Hero** | Hero Section | [View Prompt](prompts/xPortfolio_Hero.md) |
 | **Loader Animation** | Component | [View Prompt](prompts/Loader_Animation.md) |
+| **New Era Automotive Hero** | Automotive | [View Prompt](prompts/New_Era_Automotive_Hero.md) |
+| **Orbit Web3** | Web3 | [View Prompt](prompts/Orbit_Web3.md) |
+| **Web3 EOS Hero** | Web3 | [View Prompt](prompts/Web3_EOS_Hero.md) |
 
 ### 🎨 Portfolio & Personal
 | Design Name | Category | View Documentation |
@@ -90,6 +93,8 @@ Below is a categorized list of all designs included in this library. Click on an
 | Design Name | Category | View Documentation |
 | :--- | :--- | :--- |
 | **Buzzentic Agency** | Agency | [View Prompt](prompts/Buzzentic_Agency.md) |
+| **Glassmorphism Agency Hero** | Agency | [View Prompt](prompts/Glassmorphism_Agency_Hero.md) |
+| **New Era Bold Hero** | Agency | [View Prompt](prompts/New_Era_Bold_Hero.md) |
 | **Framelix 3D Studios** | Agency | [View Prompt](prompts/Framelix_3D_Studios.md) |
 | **Logoisum Video Agency** | Agency | [View Prompt](prompts/Logoisum_Video_Agency.md) |
 | **Orbit Engineers** | Agency | [View Prompt](prompts/Orbit_Engineers.md) |
@@ -121,3 +126,4 @@ Below is a categorized list of all designs included in this library. Click on an
 ---
 
 *Curated with ❤️ by Aayush Soam*
+
